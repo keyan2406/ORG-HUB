@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Org-Hub – Flotte &amp; Operationen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet"><style>/* ORG-FARBEN: --ac = Hauptfarbe, --bg = Hintergrund */
+:root{--bg:#060b12;--card:#0b1520;--line:#17324a;--tx:#d6eaf7;--mu:#6f8ea8;--ac:#00e5ff;--ok:#3ddc97;--bad:#ff6b6b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.4 Rajdhani,system-ui,sans-serif}
+header{padding:16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+h1{font-size:18px;margin:0;letter-spacing:.08em;text-transform:uppercase;flex:1}
+nav{display:flex;gap:4px;padding:8px 16px;overflow-x:auto}
+nav button{background:none;border:1px solid var(--line);color:var(--mu);padding:8px 14px;border-radius:6px;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--bg);background:var(--ac);border-color:var(--ac)}
+main{max-width:900px;margin:0 auto;padding:8px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit;min-width:0;flex:1 1 120px}
+button.b{background:var(--ac);color:var(--bg);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+button.g{background:none;border:1px solid var(--line);color:var(--mu);border-radius:6px;padding:4px 10px;cursor:pointer}
+.mu{color:var(--mu);font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.slot{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;text-align:left;border-top:1px solid var(--line)}th{color:var(--mu);font-weight:500;font-size:13px}
+.sc{overflow-x:auto}.stat{font-size:22px;font-weight:700}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;text-align:center}.day{padding:4px 2px;border:1px solid var(--line);border-radius:6px;cursor:pointer;min-height:44px;font-size:13px}.day.sel{border-color:var(--ac);outline:1px solid var(--ac)}.day.today{background:var(--card);font-weight:700}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:1px}.dot.planned{background:var(--ac)}.dot.running{background:var(--ok)}.dot.done{background:var(--mu)}.badge{font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid var(--line)}.badge.running{color:var(--ok)}.badge.planned{color:var(--ac)}.badge.done{color:var(--mu)}body{background:radial-gradient(ellipse at top,#0d2233 0,var(--bg) 62%) fixed}body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.045) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}header,nav,main{position:relative}h1,.stat{font-family:Orbitron,system-ui,sans-serif}h1{color:var(--ac);text-shadow:0 0 14px var(--ac);letter-spacing:.18em}.stat{color:var(--ac);text-shadow:0 0 10px rgba(0,229,255,.55);font-size:21px}.card{border-left:3px solid var(--ac);border-radius:2px;background:linear-gradient(135deg,rgba(0,229,255,.07),transparent 45%),var(--card);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}header{border-bottom:1px solid var(--ac);box-shadow:0 6px 24px -12px var(--ac)}input,select{border-radius:2px}input:focus,select:focus{outline:1px solid var(--ac);box-shadow:0 0 10px rgba(0,229,255,.35)}button.b{background:rgba(0,229,255,.1);color:var(--ac);border:1px solid var(--ac);border-radius:2px;text-transform:uppercase;letter-spacing:.07em;box-shadow:0 0 10px rgba(0,229,255,.25)}button.b:hover{background:var(--ac);color:var(--bg)}nav button{border-radius:2px;text-transform:uppercase;letter-spacing:.08em;font-family:inherit;font-weight:600}nav button.on{box-shadow:0 0 14px var(--ac)}.day.today{box-shadow:inset 0 0 8px rgba(0,229,255,.4)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bad);color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:90%}</style></head><body>
+<header><h1>Org-Hub</h1><span class="mu">Rufname:</span><input id="me" style="flex:0 1 140px" placeholder="dein Handle"></header>
+<div id="toast"></div><nav id="nav"></nav><main id="app"></main>
+<script>
+const ROLES=["Pilot","Co-Pilot","Turret","Bordschütze","Sanitäter","Techniker","Cargo","Eskorte"];
+let anim=1,vn="",tab="fleet",db=null,S={ships:[],ops:[],shipdb:[],log:[],bookings:[]};
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',4000)}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const fmt=n=>Math.round(n).toLocaleString("de-DE");
+let me="";try{me=localStorage.getItem("handle")||""}catch(e){}
+$("#me").value=me;
+$("#me").onchange=e=>{me=e.target.value.trim();try{localStorage.setItem("handle",me)}catch(e){}render()};
+const TABS={fleet:"Flotte",ops:"Operationen",lager:"Lager",sdb:"Schiffs-DB",log:"Protokoll"};
+$("#nav").innerHTML=Object.entries(TABS).map(([k,v])=>`<button data-t="${k}">${v}</button>`).join("");
+$("#nav").onclick=e=>{if(e.target.dataset.t){tab=e.target.dataset.t;anim=1;render()}};
+function dsc(op,col,id,d){try{const o=S.ops.find(x=>x.id===id),n=o?o.name:"";
+ if(col==="bookings")return `Buchung: ${d.qty}× ${d.item} von ${d.from} an ${d.to} (${d.where}) – ${d.reason}`;
+ if(col==="ships")return op==="set"?`Schiff „${d.model}" (${d.kind==="pledge"?"Pledge":"In-Game"}) gemeldet`:`Schiff „${(S.ships.find(x=>x.id===id)||{}).model||"?"}" entfernt`;
+ if(col==="shipdb")return op==="set"?`Datenbank: ${d.name} → $${d.us}`:"Datenbank-Eintrag entfernt";
+ if(col==="ops"){if(op==="set")return `Operation „${d.name}" angelegt`;if(op==="del")return `Operation „${n}" gelöscht`;
+  if(d.status)return `Operation „${n}": Status → ${ST[d.status]}`;
+  if(d.slots){const i=d.slots.findIndex((x,j)=>x!==o.slots[j]);if(i>=0)return `„${n}": ${d.slots[i]||o.slots[i]} ${d.slots[i]?"trägt sich ein als":"trägt sich aus als"} ${o.roles[i]}`}
+  if(d.loot){const a=d.loot,b=o.loot||[];if(a.length>b.length)return `„${n}": Beute ${a[a.length-1].item} ×${a[a.length-1].qty} hinzugefügt`;if(a.length<b.length)return `„${n}": Beute entfernt`;const i=a.findIndex((x,j)=>x.holder!==b[j].holder);if(i>=0)return `„${n}": ${a[i].item} von ${a[i].from} auf ${BANK} gebucht`}}
+ }catch(e){}return "Änderung"}
+function logAct(t){try{db.collection("log").doc(uid()).set({who:me,acct:vn,what:t,t:Date.now()})}catch(e){}}
+function need(){if(!db){toast("Speichern nicht möglich (nicht angemeldet / keine Schreibrechte).");return 1}if(!me){toast("Bitte oben zuerst dein Handle eintragen.");return 1}}
+async function save(col,id,data){if(need())return;const t=dsc("set",col,id,data);try{await db.collection(col).doc(id).set(data);logAct(t)}catch(e){toast("Fehler: "+(e.message||e.code))}}
+async function del(col,id){if(need())return;const t=dsc("del",col,id);try{await db.collection(col).doc(id).delete();logAct(t)}catch(e){toast("Keine Berechtigung.")}}
+async function upd(col,id,d){if(need())return;const t=dsc("upd",col,id,d);try{await db.collection(col).doc(id).update(d);logAct(t)}catch(e){toast("Keine Berechtigung.")}}
+function val(id){return document.getElementById(id).value.trim()}
+
+const PR_RAW=[["Avenger Stalker",1508220,60],["Avenger Titan",1290366,60],["Avenger Titan Renegade",1759590,75],["Avenger Warlock",2136645,85],["Eclipse",7541100,300],["Gladius",2262330,90],["Gladius Pirate",0,110],["Gladius Valiant",2765070,110],["Hammerhead",34466568,725],["Idris-M",0,1000],["Idris-P",0,1900],["Javelin",0,3000],["Nautilus",0,725],["Reclaimer",30164400,400],["Redeemer",9803430,330],["Retaliator",0,175],["Retaliator Bomber",7541100,275],["Sabre",4273290,170],["Sabre Comet",4650345,185],["Sabre Firebird",5580414,185],["Sabre Peregrine",3845961,185],["Sabre Raven",0,185],["Tiburon",0,775],["Vanguard Harbinger",8200400,290],["Vanguard Hoplite",6645250,240],["Vanguard Sentinel",7776700,275],["Vanguard Warden",7354900,260],["Vulcan",0,200],["Arrow",1984500,75],["Asgard",17860500,350],["Ballista",1407672,140],["C8 Pisces",745290,0],["C8R Pisces Rescue",555660,65],["C8X Pisces Expedition",515970,45],["Carrack",34398000,600],["Carrack Expedition",0,625],["Centurion",1106028,110],["Crucible",0,350],["F7A Hornet Mk II",0,175],["F7C Hornet Mk I",0,125],["F7C Hornet Mk II",4650345,175],["F7C Hornet Wildfire Mk I",0,175],["F7C-M Super Hornet Heartseeker Mk I",0,195],["F7C-M Super Hornet Mk I",0,180],["F7C-M Super Hornet Mk II",0,240],["F7C-R Hornet Tracker Mk I",0,150],["F7C-R Hornet Tracker Mk II",4882858,185],["F7C-S Hornet Ghost Mk I",0,140],["F7C-S Hornet Ghost Mk II",5115370,185],["F8C Lightning",0,300],["Gladiator",4365900,165],["Hawk",2646000,100],["Hurricane",5556600,210],["Legionnaire",0,120],["Liberator",0,575],["Paladin",15876000,350],["Spartan",804384,80],["Terrapin",5433120,220],["Terrapin Medic",5704770,220],["Valkyrie",19845000,375],["Valkyrie Liberator Edition",0,375],["Khartu-al",7229250,170],["Nox",722925,45],["Nox Kue",0,45],["San tok.Yai",9355500,220],["ATLS",71820,40],["ATLS GEO",86184,45],["CSV-SM",359100,45],["MOLE",8483738,315],["MOLE Carbon Edition",0,315],["MOLE Talus Edition",0,315],["MOTH",8483738,315],["MPUV Cargo",314213,35],["MPUV Personnel",359100,40],["MPUV Tractor",395010,40],["RAFT",3366563,190],["SRV",3770550,165],["Defender",6237000,220],["Merchantman",0,650],["HoverQuad",53865,30],["Mustang Alpha",610470,30],["Mustang Beta",622440,40],["Mustang Delta",1228500,65],["Mustang Gamma",1178100,55],["Mustang Omega",0,55],["Nomad",1436400,80],["Pioneer",0,925],["A1 Spirit",4961250,200],["A2 Hercules Starlifter",37800200,750],["Ares Inferno Starfighter",4725000,250],["Ares Ion Starfighter",4725000,250],["C1 Spirit",3118500,125],["C2 Hercules Starlifter",18900000,400],["Golem",1005480,60],["Golem Ox",1149120,90],["Herald",1220940,0],["Stinger",8930250,315],["Talon",3260250,115],["Talon Shrike",3260250,115],["Fury",691268,0],["Fury LX",824670,0],["Fury MX",691268,0],["Guardian",6284250,0],["Guardian MX",7038360,0],["Pulse",175959,0],["Pulse LX",201096,0],["Razor",1770360,0],["Razor EX",1669820,0],["400i",8398060,0],["Nova Tank",861840,0],["Dragonfly Black",325584,0],["Cutter Scout",670320,0],["Cutter",635040,0],["Clipper",3619730,0],["Syulen",2082500,0],["Shiv",5556600,0],["MDC",127575,0],["P-72 Archimedes",449820,0],["Mule",68040,0],["Aurora Mk II",904932,0],["Salvation",1185030,0],["Hull A",1701000,0],["Fortune",1984500,0],["Reliant Kore",1719900,0]];
+const nrm=s=>String(s).toLowerCase().trim().replace(/^(aegis|anvil|aopoa|argo|banu|c\.o\.|crusader|drake|esperia|mirai|misc|origin|rsi|tumbril|greycat|kruger|gatac)\s+/,"").replace(/[^a-z0-9]/g,"");
+const PM={};PR_RAW.forEach(r=>PM[nrm(r[0])]=[r[1],r[2]]);
+function price(m){const n=nrm(m);const c=S.shipdb.find(x=>nrm(x.name)===n);if(c)return[c.au||0,c.us||0];if(PM[n])return PM[n];let b="";for(const k in PM)if(n.startsWith(k)&&k.length>b.length)b=k;return b?PM[b]:null}
+const EXTRA=["Perseus","Caterpillar","Cutlass Black","Cutlass Red","Cutlass Blue","Freelancer","Freelancer MAX","Freelancer DUR","Freelancer MIS","Constellation Andromeda","Constellation Taurus","Constellation Aquila","Constellation Phoenix","Starfarer","Starfarer Gemini","600i Explorer","600i Touring","890 Jump","Aurora MR","Aurora LN","Aurora CL","300i","315p","325a","350r","100i","125a","135c","Mercury Star Runner","Corsair","Zeus Mk II ES","Zeus Mk II CL","Prowler","Polaris","Hull B","Hull C","Prospector","Mantis","Scorpius","Cyclone","Ursa Rover","Drake Vulture","Drake Buccaneer","Drake Corsair","Kraken","Idris","Ironclad","Mercury"];
+const names=()=>[...new Set([...PR_RAW.map(r=>r[0]),...EXTRA,...S.shipdb.map(x=>x.name)])].sort((a,b)=>a.localeCompare(b));
+const fd=d=>d?new Date(d).toLocaleDateString("de-DE",{dateStyle:"medium"}):"ohne Datum";
+const BANK="VZA Bank";let lh="",q3="";
+function bank(oid,i){const o=S.ops.find(x=>x.id===oid),l=[...(o.loot||[])],x=l[i];l[i]={...x,from:x.holder,holder:BANK,where:BANK,by:me,at:Date.now()};upd("ops",oid,{loot:l})}
+function setH(h){lh=h;render(1)}
+let bk="";
+function holdings(){const m={};
+ S.ops.forEach(o=>(o.loot||[]).forEach((l,i)=>{const k=[o.id,i,l.holder||"",l.where||""].join("|");m[k]=m[k]||{key:k,oid:o.id,idx:i,item:l.item,holder:l.holder||"–",where:l.where||"",qty:0,op:o.name,date:o.date||"",lead:o.lead,from:l.from};m[k].qty+=l.qty}));
+ [...S.bookings].sort((a,b)=>a.t-b.t).forEach(b=>{const s=[b.oid,b.idx,b.from,b.fromWhere||""].join("|"),d=[b.oid,b.idx,b.to,b.where||""].join("|");if(m[s])m[s].qty-=b.qty;m[d]=m[d]||{key:d,oid:b.oid,idx:b.idx,item:b.item,holder:b.to,where:b.where||"",qty:0,op:b.op,date:b.date,lead:(m[s]||{}).lead,from:b.from};m[d].qty+=b.qty});
+ return Object.values(m).filter(x=>x.qty>0)}
+function hs(){return [...new Set([BANK,me,...S.ships.map(s=>s.owner),...S.ops.flatMap(o=>[o.lead,...(o.slots||[])]),...S.log.map(x=>x.who),...S.bookings.flatMap(b=>[b.from,b.to]),...holdings().map(x=>x.holder)].filter(Boolean))].sort((a,b)=>a===BANK?-1:b===BANK?1:a.localeCompare(b))}
+function doBook(){const h=holdings().find(x=>x.key===bk);if(!h)return;const to=val("bt"),q=+val("bq"),w=val("bw"),r=val("br");
+ if(!to)return toast("Bitte ein Zielkonto wählen.");if(!(q>0&&q<=h.qty))return toast("Menge ungültig (max. "+h.qty+").");if(!w)return toast("Bitte den neuen Lagerort angeben.");if(!r)return toast("Bitte einen Grund angeben.");
+ save("bookings",uid(),{item:h.item,qty:q,from:h.holder,to,fromWhere:h.where,where:w,reason:r,by:me,t:Date.now(),oid:h.oid,idx:h.idx,op:h.op,date:h.date});bk=""}
+function lager(){
+ const HD=holdings(),H=hs(),sel=H.includes(lh)?lh:"",whs=[...new Set(HD.map(x=>x.where).filter(Boolean))];
+ const chips=`<nav style="padding:0;flex-wrap:wrap"><button class="${sel?"":"on"}" onclick="setH('')">Alle</button>${H.map(h=>`<button class="${h===sel?"on":""}" data-h="${esc(h)}" onclick="setH(this.dataset.h)">${esc(h)}</button>`).join("")}</nav>`;
+ const tot=l=>{const t={};l.forEach(i=>t[i.item]=(t[i.item]||0)+i.qty);return Object.entries(t).map(([k,v])=>esc(k)+" ×"+fmt(v)).join(", ")||"leer"};
+ const form=h=>bk!==h.key?"":`<div class="row" style="margin:6px 0"><select id="bt"><option value="">Zielkonto wählen</option>${H.filter(x=>x!==h.holder).map(x=>`<option>${esc(x)}</option>`).join("")}</select><input id="bq" type="number" min="1" max="${h.qty}" value="${h.qty}" style="flex:0 1 100px"><input id="bw" list="bwl" placeholder="Neuer Lagerort"><input id="br" placeholder="Grund / Verwendungszweck"><button class="b" onclick="doBook()">Buchen</button><button class="g" onclick="bk='';render(1)">Abbrechen</button></div><datalist id="bwl">${whs.map(w=>`<option value="${esc(w)}">`).join("")}</datalist>`;
+ const line=h=>`<div class="slot"><span>${esc(h.item)} ×${fmt(h.qty)}<div class="mu">aus „${esc(h.op)}" (${fd(h.date)})${h.from?" · von "+esc(h.from):""}</div></span>${(h.holder===me||h.holder===BANK||h.lead===me)?`<button class="g" data-k="${esc(h.key)}" onclick="bk=this.dataset.k;render(1)">Buchen</button>`:""}</div>${form(h)}`;
+ const grp=l=>{const g={};l.forEach(x=>{const w=x.where||"Lagerort offen";(g[w]=g[w]||[]).push(x)});return Object.entries(g).map(([w,a])=>`<div class="card"><b>📦 ${esc(w)}</b>${a.map(line).join("")}</div>`).join("")};
+ const hist=h=>{const B=S.bookings.filter(b=>b.from===h||b.to===h).sort((a,b)=>b.t-a.t);return `<div class="card sc"><b>Buchungen</b>${B.length?`<table>${B.map(b=>`<tr><td class="mu" style="white-space:nowrap">${new Date(b.t).toLocaleDateString("de-DE")}</td><td>${esc(b.from)} → ${esc(b.to)}</td><td>${esc(b.item)} ×${fmt(b.qty)}<div class="mu">${esc(b.fromWhere||"–")} → ${esc(b.where||"–")} · aus „${esc(b.op)}"${b.reason?" · Grund: "+esc(b.reason):""} · durch ${esc(b.by)}</div></td></tr>`).join("")}</table>`:'<div class="mu">Noch keine Buchungen.</div>'}</div>`};
+ if(sel){const l=HD.filter(x=>x.holder===sel),sh=S.ships.filter(s=>s.owner===sel);
+  return chips+`<div class="card"><div class="stat">${esc(sel)}</div><div class="mu">${sel===BANK?"Org-Bankkonto":"Händler-Profil · "+sh.length+" Schiffe"+(sh.length?": "+esc(sh.map(s=>s.model).join(", ")):"")}</div></div><div class="card"><b>Gesamtbestand</b><div class="mu">${tot(l)}</div></div>${l.length?grp(l):'<div class="card mu">Keine Bestände.</div>'}${hist(sel)}`}
+ return chips+H.map(h=>{const l=HD.filter(x=>x.holder===h),w=[...new Set(l.map(x=>x.where).filter(Boolean))];return `<div class="card"><div class="row" style="justify-content:space-between"><b>${esc(h)}</b><button class="g" data-h="${esc(h)}" onclick="setH(this.dataset.h)">Profil öffnen</button></div><div class="mu">${tot(l)}</div>${w.length?`<div class="mu">📦 ${w.map(x=>esc(x)).join(" · ")}</div>`:""}</div>`}).join("")}
+function sdbList(){
+ const m={};PR_RAW.forEach(r=>m[nrm(r[0])]={name:r[0],au:r[1],us:r[2],src:"Basis"});
+ S.shipdb.forEach(x=>m[nrm(x.name)]={...x,src:"Org"});
+ const L=Object.values(m).filter(x=>!q3||nrm(x.name).includes(nrm(q3))).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,80);
+ return `<table><tr><th>Schiff</th><th>Pledge $</th><th></th></tr>${L.map(x=>`<tr><td>${esc(x.name)}<div class="mu">${x.src}${x.by?" · "+esc(x.by):""}</div></td><td>${x.us?"$"+x.us:"–"}</td><td><button class="g" data-n="${esc(x.name)}" data-u="${x.us||""}" onclick="fillSd(this.dataset)">ändern</button>${x.id&&x.by===me?` <button class="g" onclick="del('shipdb','${x.id}')">✕</button>`:""}</td></tr>`).join("")||'<tr><td colspan=3 class="mu">Keine Treffer.</td></tr>'}</table>`}
+function fillSd(d){document.getElementById("dn").value=d.n;document.getElementById("du").value=d.u;document.getElementById("dn").focus()}
+function sdb(){return `<div class="card"><b>Schiffs-Datenbank</b><div class="mu">Referenz für einheitliche Namen und Preise. Basisliste plus Org-Einträge; Org-Einträge haben Vorrang.</div><div class="row" style="margin-top:8px"><input id="dn" list="sn" placeholder="Schiffsname"><input id="du" type="number" placeholder="$ Pledge"><button class="b" onclick="saveSd()">Speichern</button></div><datalist id="sn">${names().map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div><div class="card"><input placeholder="🔍 Datenbank durchsuchen" value="${esc(q3)}" oninput="q3=this.value;document.getElementById('sdl').innerHTML=sdbList()" style="width:100%"><div id="sdl" class="sc" style="margin-top:8px">${sdbList()}</div></div>`}
+function saveSd(){let m=val("dn");const n=nrm(m);if(!n)return toast("Bitte einen Schiffsnamen eingeben.");const c=names().find(x=>nrm(x)===n);if(c)m=c;save("shipdb",n,{name:m,au:0,us:+val("du")||0,by:me})}
+function protokoll(){const L=[...S.log].sort((a,b)=>b.t-a.t).slice(0,150);return `<div class="card"><b>Änderungsprotokoll</b><div class="mu">Wer hat wann was geändert (letzte ${L.length} Einträge). „Konto" ist das angemeldete Claude-Konto der Person.</div></div><div class="card sc">${L.length?`<table>${L.map(x=>`<tr><td class="mu" style="white-space:nowrap">${new Date(x.t).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"})}</td><td><b>${esc(x.who)}</b>${x.acct&&x.acct!==x.who?` <span class="mu">(Konto: ${esc(x.acct)})</span>`:""}</td><td>${esc(x.what)}</td></tr>`).join("")}</table>`:'<span class="mu">Noch keine Änderungen.</span>'}</div>`}
+let q1="",q2="";
+const fmtp=p=>p&&p[1]?"$"+p[1]:"kein Pledge-Preis hinterlegt";
+function flist(){
+ let L=S.ships.filter(s=>(!q1||nrm(s.model).includes(nrm(q1)))&&(!q2||String(s.owner).toLowerCase().includes(q2.toLowerCase())));
+ if(!L.length)return '<p class="mu">'+(S.ships.length?"Keine Treffer.":"Noch keine Schiffe eingetragen.")+"</p>";
+ const row=(s,own)=>`<div class="slot"><span>${own?esc(s.model):`<button class="g" data-o="${esc(s.owner)}" onclick="hang(this.dataset.o)">${esc(s.owner)}</button>`} <span class="mu">· ${s.kind==="pledge"?"Pledge":"In-Game"} ${s.kind==="pledge"?" · "+fmtp(price(s.model)):""}</span></span>${s.owner===me?`<button class="g" onclick="del('ships','${s.id}')">entfernen</button>`:""}</div>`;
+ const by={};L.forEach(s=>{const k=q2?s.owner:s.model;(by[k]=by[k]||[]).push(s)});
+ return Object.entries(by).sort().map(([k,l])=>`<div class="card"><b>${q2?"Hangar · ":""}${esc(k)}</b> <span class="mu">${q2?l.length+" Schiffe · Pledge-Wert $"+fmt(l.filter(s=>s.kind==="pledge").reduce((a,s)=>a+((price(s.model)||[0,0])[1]),0)):"×"+l.length}</span>${(q2?[...l].sort((a,b)=>a.model.localeCompare(b.model)):l).map(s=>row(s,!!q2)).join("")}</div>`).join("")}
+function hang(o){q2=o;q1="";render(1)}
+function fl(){document.getElementById("flist").innerHTML=flist()}
+function fleet(){
+ let us=0,pl=0,miss=0;S.ships.forEach(s=>{const p=price(s.model);if(s.kind==="pledge"){pl++;if(!p||!p[1])miss++;else us+=p[1]}});
+ return `<div class="card row"><div><div class="stat">${S.ships.length}</div><div class="mu">Schiffe</div></div><div><div class="stat">$${fmt(us)}</div><div class="mu">Pledge-Store-Wert (gesamt)</div></div></div>
+ <div class="mu" style="margin:-4px 2px 8px">${S.ships.length-pl} In-Game gekauft · ${pl} Pledge · ${miss} Pledge-Schiffe ohne Preisdaten (zählen nicht mit); In-Game-Käufe zählen nicht zum Pledge-Wert. Preise: UEX/Wiki-Stand Okt. 2026, nicht für alle Schiffe vorhanden.</div>
+ <div class="card"><b>Schiff melden</b><div class="row" style="margin-top:8px"><input id="sm" list="sn" placeholder="Modell"><select id="sk"><option value="pledge">Pledge-Store</option><option value="ingame">In-Game gekauft</option></select><button class="b" onclick="addShip()">Hinzufügen</button></div><datalist id="sn">${names().map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+ <div class="card"><div class="row"><input list="sn" placeholder="🔍 Schiff suchen" value="${esc(q1)}" oninput="q1=this.value;fl()"><input list="so" placeholder="🔍 Hangar / Handle suchen" value="${esc(q2)}" oninput="q2=this.value;fl()"></div><datalist id="so">${[...new Set(S.ships.map(s=>s.owner))].sort().map(o=>`<option value="${esc(o)}">`).join("")}</datalist></div><div id="flist">${flist()}</div>`}
+function addShip(){let m=val("sm");const n=nrm(m);if(!n)return;const c=names().find(x=>nrm(x)===n);if(c)m=c;save("ships",uid(),{model:m,kind:val("sk"),owner:me,t:Date.now()});}
+let rr=[{r:"",n:1}];
+let sr=[{s:"",n:1}];
+function srHtml(){return sr.map((x,i)=>`<div class="row" style="margin-top:6px"><input value="${esc(x.s)}" placeholder="Schiff oder Klasse" onchange="sr[${i}].s=this.value"><input type="number" min="1" value="${x.n}" style="flex:0 1 80px" onchange="sr[${i}].n=+this.value"><button class="g" onclick="sr.splice(${i},1);keepS()">✕</button></div>`).join("")}
+function keepS(){$("#srbox").innerHTML=srHtml()}
+function addShipNeed(){sr.push({s:"",n:1});keepS()}
+function rrHtml(){return rr.map((x,i)=>`<div class="row" style="margin-top:6px"><input value="${esc(x.r)}" placeholder="Rolle" onchange="rr[${i}].r=this.value"><input type="number" min="1" value="${x.n}" style="flex:0 1 80px" onchange="rr[${i}].n=+this.value"><button class="g" onclick="rr.splice(${i},1);keep()">✕</button></div>`).join("")}
+function keep(){$("#rrbox").innerHTML=rrHtml()}
+function addRole(){rr.push({r:"",n:1});keep()}
+let cm=new Date(),sel="",flt="all";
+const ST={planned:"Geplant",running:"Läuft",done:"Abgeschlossen"},stOf=o=>o.status||"planned";
+const p2=n=>String(n).padStart(2,"0"),tk=new Date();
+function cal(){const y=cm.getFullYear(),m=cm.getMonth(),first=(new Date(y,m,1).getDay()+6)%7,nd=new Date(y,m+1,0).getDate(),by={};
+ S.ops.forEach(o=>{if(o.date)(by[o.date]=by[o.date]||[]).push(o)});
+ let c="";for(let i=0;i<first;i++)c+="<div></div>";
+ for(let d=1;d<=nd;d++){const k=y+"-"+p2(m+1)+"-"+p2(d),l=by[k]||[];
+  c+=`<div class="day${k===sel?" sel":""}${k===tk.getFullYear()+"-"+p2(tk.getMonth()+1)+"-"+p2(tk.getDate())?" today":""}" onclick="pick('${k}')">${d}<div>${l.map(o=>`<i class="dot ${stOf(o)}"></i>`).join("")}</div></div>`}
+ return `<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><button class="g" onclick="mv(-1)">‹</button><b>${cm.toLocaleDateString("de-DE",{month:"long",year:"numeric"})}</b><button class="g" onclick="mv(1)">›</button></div><div class="cal">${["Mo","Di","Mi","Do","Fr","Sa","So"].map(x=>`<div class="mu">${x}</div>`).join("")}${c}</div><div class="mu" style="margin-top:6px"><i class="dot planned"></i> geplant &nbsp;<i class="dot running"></i> läuft &nbsp;<i class="dot done"></i> abgeschlossen &nbsp;· Tag antippen zum Filtern</div></div>`}
+function mv(n){cm=new Date(cm.getFullYear(),cm.getMonth()+n,1);render(1)}
+function pick(k){sel=sel===k?"":k;render(1)}
+function setF(f){flt=f;render(1)}
+function setSt(id,s){upd("ops",id,{status:s})}
+function ops(){
+ const cnt=s=>S.ops.filter(o=>stOf(o)===s).length,ord={running:0,planned:1,done:2};
+ const L=S.ops.filter(o=>(flt==="all"||stOf(o)===flt)&&(!sel||o.date===sel)).sort((a,b)=>{const ka=(a.date||"")+(a.time||""),kb=(b.date||"")+(b.time||"");return ord[stOf(a)]-ord[stOf(b)]||(stOf(a)==="done"?kb.localeCompare(ka):ka.localeCompare(kb))});
+ return `<div class="card"><b>Operation planen</b><div class="row" style="margin-top:8px"><input id="on" placeholder="Name der Operation"><input id="od" type="date"><input id="ot" type="time"></div><div class="mu" style="margin-top:8px">Mindestens benötigte Rollen und Anzahl:</div><div id="rrbox">${rrHtml()}</div><div class="mu" style="margin-top:12px">Mindestens benötigte Schiffe und Anzahl:</div><div id="srbox">${srHtml()}</div><div class="row" style="margin-top:8px"><button class="g" onclick="addShipNeed()">+ Schiff</button></div><div class="row" style="margin-top:8px"><button class="g" onclick="addRole()">+ Rolle</button><button class="b" onclick="addOp()">Operation anlegen</button></div></div>
+ ${cal()}
+ <nav style="padding:0">${[["all","Alle ("+S.ops.length+")"],["running","Läuft ("+cnt("running")+")"],["planned","Geplant ("+cnt("planned")+")"],["done","Abgeschlossen ("+cnt("done")+")"]].map(([k,v])=>`<button class="${flt===k?"on":""}" onclick="setF('${k}')">${v}</button>`).join("")}</nav>
+ ${sel?`<div class="mu" style="margin-top:8px">Datum-Filter: ${esc(sel)} <button class="g" onclick="pick('${sel}')">✕</button></div>`:""}
+ ${L.map(opCard).join("")||'<p class="mu">Keine Operationen in dieser Ansicht.</p>'}`}
+function opCard(o){const sl=o.slots||[],free=sl.filter(x=>!x).length,ppl=[...new Set(sl.filter(Boolean))],loot=o.loot||[],st=stOf(o),mine=o.lead===me;
+ return `<div class="card"><div class="row" style="justify-content:space-between"><div><b>${esc(o.name)}</b> <span class="badge ${st}">${ST[st]}</span><div class="mu">${o.date?new Date(o.date).toLocaleDateString("de-DE",{dateStyle:"medium"}):"ohne Datum"}${o.time?", "+esc(o.time)+" Uhr":""} · Leitung: ${esc(o.lead)} · <span class="${free?"bad":"ok"}">${free?free+" frei":"voll besetzt"}</span></div></div>${mine?`<div class="row">${st==="planned"?`<button class="b" onclick="setSt('${o.id}','running')">Starten</button>`:""}${st==="running"?`<button class="b" onclick="setSt('${o.id}','done')">Abschließen</button>`:""}${st==="done"?`<button class="g" onclick="setSt('${o.id}','planned')">Wieder öffnen</button>`:""}<button class="g" onclick="if(this.dataset.s){del('ops','${o.id}')}else{this.dataset.s=1;this.textContent='Wirklich löschen?'}">löschen</button></div>`:""}</div>
+ ${(o.ships&&o.ships.length)?`<div class="mu" style="margin:8px 0">Mindestens benötigte Schiffe: <b>${o.ships.map(x=>x.n+"× "+esc(x.model)).join(", ")}</b></div>`:""}${sl.map((p,i)=>`<div class="slot"><span>${esc(o.roles[i])}</span><span>${p?`<b>${esc(p)}</b> ${p===me?`<button class="g" onclick="slot('${o.id}',${i},false)">austragen</button>`:""}`:`<button class="b" onclick="slot('${o.id}',${i},true)">Eintragen</button>`}</span></div>`).join("")}
+ <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><b>Beute</b>${loot.map((l,i)=>`<div class="slot"><span>${esc(l.item)} ×${fmt(l.qty)}<div class="mu">📦 ${esc(l.where||"Lagerort offen")} · bei ${esc(l.holder||"–")}</div></span><span class="mu">${ppl.length?fmt(l.qty/ppl.length)+" pro Person":"–"} ${mine?`<button class="g" onclick="rmLoot('${o.id}',${i})">✕</button>`:""}</span></div>`).join("")||'<div class="mu">Noch keine Beute eingetragen.</div>'}
+ ${mine?`<div class="row" style="margin-top:6px"><input id="li${o.id}" placeholder="Beute"><input id="lq${o.id}" type="number" placeholder="Menge"><input id="lw${o.id}" list="lc${o.id}" placeholder="Lagerort"><datalist id="lc${o.id}">${[...new Set(S.ops.flatMap(x=>(x.loot||[]).map(l=>l.where)).filter(Boolean))].map(w=>`<option value="${esc(w)}">`).join("")}</datalist><select id="lh${o.id}">${[...new Set([o.lead,...ppl,...S.ships.map(s=>s.owner),"VZA Bank"].filter(Boolean))].map(w=>`<option>${esc(w)}</option>`).join("")}</select><button class="b" onclick="addLoot('${o.id}')">Hinzufügen</button></div>`:""}
+ <div class="mu" style="margin-top:6px">Aufteilung gleichmäßig auf ${ppl.length} Teilnehmer${ppl.length?": "+esc(ppl.join(", ")):""}</div></div></div>`}
+function addOp(){const n=val("on");if(!n)return;const roles=[];rr.forEach(x=>{if(x.r.trim())for(let i=0;i<(x.n||1);i++)roles.push(x.r.trim())});if(!roles.length)return toast("Mindestens eine Rolle angeben.");save("ops",uid(),{name:n,date:val("od"),time:val("ot"),roles,ships:sr.filter(x=>x.s.trim()).map(x=>({model:x.s.trim(),n:x.n||1})),slots:roles.map(()=>""),lead:me,status:"planned",loot:[]})}
+function slot(id,i,take){const o=S.ops.find(x=>x.id===id);if(!me)return toast("Bitte oben zuerst dein Handle eintragen.");const s=[...o.slots];if(take&&s.includes(me)&&false)return;s[i]=take?me:"";upd("ops",id,{slots:s})}
+function addLoot(id){const o=S.ops.find(x=>x.id===id),it=val("li"+id),q=+val("lq"+id);if(!it||!q)return;upd("ops",id,{loot:[...(o.loot||[]),{item:it,qty:q,where:val("lw"+id),holder:val("lh"+id)}]})}
+function rmLoot(id,i){const o=S.ops.find(x=>x.id===id);upd("ops",id,{loot:o.loot.filter((_,j)=>j!==i)})}
+
+function render(f){
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
+ const a=document.activeElement;if(!f&&a&&a.closest&&a.closest("main")&&a.tagName==="INPUT")return;
+ $("#app").className=anim?"enter":"";anim=0;$("#app").innerHTML=({fleet,ops,lager,sdb,log:protokoll})[tab]()+(db?"":'<p class="mu">Offline-Ansicht: Gemeinsame Daten sind nur nach Anmeldung verfügbar.</p>');
+}
+(async()=>{render();
+ try{db=await claude.use("db")}catch(e){}try{vn=(await claude.user.me()).name||""}catch(e){}
+ if(!db){render();return}
+ for(const [k,key] of [["ships","ships"],["ops","ops"],["shipdb","shipdb"],["log","log"],["bookings","bookings"]])
+  db.collection(k).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
+})();
+</script></body></html>
